@@ -29,9 +29,11 @@ class SymmetrizeOpTest {
             // ПОЧЕМУ У НАС addSymmetries, А НЕ addSymmetry ? ПОТОМУ ЧТО ДОБАВЛЯЕМ ДВЕ СИММЕТРИИ?
 
             addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+
             //Устанавливаем симметрии тензоров R и H.
             setSymmetric 'R_ab'
             setSymmetric 'H_ab'
+
             // Определяем переменные (были в методе symmetrizePair класса SymmetrizeOp)
             //.t превращает обычные символы в компьютерный объект
             def gTensor = 'G^ab_ij'.t
@@ -49,7 +51,7 @@ class SymmetrizeOpTest {
             // Определяем четырёхмерную единицу
             'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
             // Вводим оператор, соответствующий D2. Почему "op" - серое? Куда оно ссылается?
-            def op = 'd_ab^gd * N_a^a + (1/2)*(d_a^g * N_b^d + d_b^g * N_a^d + d_a^d * N_b^g + d_b^d * N_a^g)'.t
+//            def op = 'd_ab^gd * N_a^a + (1/2)*(d_a^g * N_b^d + d_b^g * N_a^d + d_a^d * N_b^g + d_b^d * N_a^g)'.t
             // Вводим матрицу К, соответствующую оператору D2.
             def k = 'K_c^e_{ab}^{gd} = ((1/2)*d_{a}^{e}*d_{b}^{g}*d^{d}_{c}+(1/2)*d^{g}_{c}*d_{a}^{d}*d_{b}^{e}+(1/2)*d_{a}^{g}*d^{d}_{c}*d_{b}^{e}+(1/2)*d_{a}^{e}*d^{g}_{c}*d_{b}^{d}+d^{e}_{c}*d_{ab}^{gd})'.t
 //    println(Collect['N_ab'] >> op)
@@ -59,7 +61,9 @@ class SymmetrizeOpTest {
             // ЧТО ПРОИСХОДИТ ?
 
             //Создаём переменную symmetrized и ... ??
-            def symmetrized = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0) << k
+            def symmetrized = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0)
+            symmetrized <<= k
+
             // <<= (Оператор присваивания «Сдвиг влево», C << = 2, это как C = C << 2)
             //ExpandAndEliminate разлагает произведение сумм и положительных целых степеней и,
             // по ходу дела, устраняет метрические тензоры и дельты Кронекера.
@@ -77,7 +81,7 @@ class SymmetrizeOpTest {
             symmetrized <<= Collect['N_ab'.t, 'H^ij'.t] & EliminateDueSymmetries
             //Статический метод info из класса TensorUtils с параметром symmetrized возвращает информацию
             // об объекте symmetrized.
-            println TensorUtils.info(symmetrized)
+            println(TensorUtils.info(symmetrized))
             //Произведение матрицы W и поля H: W^{a}_{p,q,c}*H^{c}_{a} !НЕ СОВПАДАЕТ!
             println(symmetrized[0])
             // Что он выводит тут ?
