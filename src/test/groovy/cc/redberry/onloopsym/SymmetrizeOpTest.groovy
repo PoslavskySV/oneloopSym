@@ -5,6 +5,7 @@ import cc.redberry.core.utils.TensorUtils
 import cc.redberry.groovy.Redberry
 import org.junit.Test
 
+import static cc.redberry.core.context.OutputFormat.*
 import static cc.redberry.core.tensor.Tensors.addSymmetries
 import static cc.redberry.core.tensor.Tensors.setSymmetric
 import static cc.redberry.groovy.RedberryStatic.*
@@ -36,9 +37,9 @@ class SymmetrizeOpTest {
 
             // Определяем переменные (были в методе symmetrizePair класса SymmetrizeOp)
             //.t превращает обычные символы в компьютерный объект
-            def gTensor = 'G^ab_ij'.t
-            def nabla = 'N_ab'.t
-            def hTensor = 'H^ij'.t
+            //def gTensor = 'G^ab_ij'.t
+            //def nabla = 'N_ab'.t
+            //def hTensor = 'H^ij'.t
 
 //    symmetrizePair(gTensor, nabla, hTensor, 0)
 //    symmetrizePair(gTensor, nabla, hTensor, 1)
@@ -83,9 +84,9 @@ class SymmetrizeOpTest {
             // об объекте symmetrized.
             println(TensorUtils.info(symmetrized))
             //Произведение матрицы W и поля H: W^{a}_{p,q,c}*H^{c}_{a} !НЕ СОВПАДАЕТ!
-            println(symmetrized[0])
+            println symmetrized[0].toString(LaTeX)
             // Что он выводит тут ?
-            println(symmetrized[1])
+            println symmetrized[1].toString(LaTeX)
         }
     }
 }
