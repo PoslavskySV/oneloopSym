@@ -94,6 +94,8 @@ class SymmetrizeOp {
             // generate, в параметрах которого переменная dIndices обращается к ... ???
 
             // ЧТО ДЕЛАЮТ МЕТОДЫ create И generate ? что есть get(0).type ?
+            // dIndices.get(0) -- первый индекс 
+            // dIndices.get(0).type -- тип первого индекса (греческий, латинский тп, закодировано в одном байте)
 
             def iType = dIndices.get(0).type
 
@@ -163,15 +165,18 @@ class SymmetrizeOp {
             //Создаём переменную toSymmetrize, которой присваиваем переменную nabla с инвертированными индексами.
 
             // ЧТО ТАКОЕ [iPosition, iPosition + 1] ?
+            // nabla.indices[iPosition, iPosition + 1] --- возвращает индексы начиная с iPosition и до iPosition + 1 (включительно)
 
             def toSymmetrize = nabla.indices[iPosition, iPosition + 1].inverted
             //Свойство .symmetries позволяет определить перестановочные симметрии индексов. Оно
             // возвращает контейнер перестановок и соответствующую группу PermutationGroup.
             //Метод setSymmetric() устанавливает симметрии.
+            // поправка: setSymmetric() делает индексы полностью симметричными
             toSymmetrize.symmetries.setSymmetric()
             //Создаём переменную higher, которой присваиваем произведение, в котором... ???
 
             // ЧТО ПРОИСХОДИТ С gTensor ?
+            // (Symmetrize[toSymmetrize] >> gTensor) -- это применить симметризацию к тензору gTensor и вернуть резалт
 
             //Symmetrize[indices] — делает симметрии выражения одинаковыми с симметриями индексов,
             // делает выражение симметричным только по заданным индексам, также умножит результат
@@ -208,6 +213,10 @@ class SymmetrizeOp {
             //Создаём переменную subs, присваиваем ей... ???
 
             // ЧТО ДЕЛАЕТ МЕТОД eq ?
+            // a.eq(b) создает замену а -> b ; например 
+            // def a = "x".t; def b = "y"; def subs = a.eq(b); все равно что написать сразу: def subs = "x = y".t;
+            
+            
 
             // lNabla * rNabla -> nNabla
             def subs = (lNabla * rNabla).eq(nNabla)
