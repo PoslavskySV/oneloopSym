@@ -11,6 +11,7 @@ import cc.redberry.core.tensor.Tensor
 import cc.redberry.core.utils.TensorUtils
 import cc.redberry.groovy.Redberry
 
+import static cc.redberry.core.context.OutputFormat.*
 import static cc.redberry.core.tensor.Tensors.simpleTensor
 import static cc.redberry.groovy.RedberryStatic.ExpandAndEliminate
 import static cc.redberry.groovy.RedberryStatic.Symmetrize
