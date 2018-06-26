@@ -14,7 +14,43 @@ import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizePair
 //Создаём класс SymmetrizeOpTest
 class SymmetrizeOpTest {
 
-    @Test // ЭТО ЧТО ???
+    @Test
+    void test_op2_correctness() {
+        use(Redberry) {
+            addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+            setSymmetric 'h_ab'
+
+            'R_ab := R^c_acb'.t
+
+            CC.parserAllowsSameVariance = true
+            def proga = 'P_qp = (-1/2*g_pc*R_aq - 1/2*g_qc*R_ap + R_qapc)*h_ca'.t
+            def byhand = 'H_ab = (1/2)*(-R_bn*h_an - R_an*h_bn + R_bdag*h_gd + R_adbg*h_gd)'.t
+            println((proga & byhand & ExpandAndEliminate) >> 'P_qp - H_qp'.t)
+        }
+    }
+
+    @Test
+    void test1_operator2() {
+        use(Redberry) {
+            addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+            setSymmetric 'h_ab'
+            'R_ab := R^c_acb'.t
+
+            CC.parserAllowsSameVariance = true
+
+            'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
+            def kTensors = 'K_c^e_{ab}^{gd} = ((1/2)*d_{a}^{e}*d_{b}^{g}*d^{d}_{c}+(1/2)*d^{g}_{c}*d_{a}^{d}*d_{b}^{e}+(1/2)*d_{a}^{g}*d^{d}_{c}*d_{b}^{e}+(1/2)*d_{a}^{e}*d^{g}_{c}*d_{b}^{d}+d^{e}_{c}*d_{ab}^{gd})'.t
+            def actual = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0)
+            actual <<= kTensors & ExpandAndEliminate & 'd_a^a = 4'.t
+
+            def expected = 'N_ab * ... '.t
+
+            assert TensorUtils.equals(expected, actual)
+        }
+    }
+
+    @Test
+    // ЭТО ЧТО ???
     void test1() { //Ключевое слово void указывает на то, что метод ничего не возвращает. Условно методы,
         // которые не возвращают никакого значения, называются процедурами.
         use(Redberry) {//указываем, что будем использовать редберри
