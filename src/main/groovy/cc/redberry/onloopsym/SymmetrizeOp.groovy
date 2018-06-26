@@ -11,6 +11,7 @@ import cc.redberry.core.tensor.Tensor
 import cc.redberry.core.utils.TensorUtils
 import cc.redberry.groovy.Redberry
 
+import static cc.redberry.core.context.OutputFormat.*
 import static cc.redberry.core.tensor.Tensors.simpleTensor
 import static cc.redberry.groovy.RedberryStatic.ExpandAndEliminate
 import static cc.redberry.groovy.RedberryStatic.Symmetrize
@@ -32,6 +33,10 @@ class SymmetrizeOp {
 // значения, то методы содержат собой набор операторов, которые выполняют
 // определенные действия, а в фигурные скобки заключено тело метода - все действия, которые он выполняет.
 // Параметры метода представляют собой переменные, которые определяются в сигнатуре метода и создаются при его вызове.
+    
+// поправка: def - это _вместо_ типа возвращаемого значения, если мы пишем "def", компилятор сам определит какой 
+// тип возвращается, когда будет вызван метод. Вместо "def" мы могли бы написать реальный тип который мы вернем, 
+// в данном случае это тип Tensor. См. "статическая типизация" и "динамическая типизация" на википедии
     static def covariantCommutator(SimpleIndices dIndices, Tensor expression) {
 
         assert dIndices.size() == 2
@@ -42,12 +47,19 @@ class SymmetrizeOp {
         //Входные параметры — это какие-либо данные, которые передаются из других классов (в данном случае
         // import cc.redberry.core.indices.SimpleIndices и import cc.redberry.core.tensor.Tensor)
         // и которые  метод должен обработать.
-        //SimpleIndices и Tensor - типы переменных (из какого они класса),
+        //SimpleIndices и Tensor - типы переменных (какого они класса),
         //dIndices и expression - названия (идентификаторы) переменных
-        use(Redberry) { //указываем, что будем использовать редберри (import cc.redberry.groovy.Redberry)
+        use(Redberry) { //указываем, что будем использовать синтаксис определенный в классе Redberry (import cc.redberry.groovy.Redberry)
             //Создаём переменные upper и lower, присваиваем им переменную expression (из класса Tensor),
             // которая получает индексы (.indices) верхние или нижние (.upper или .lower) и свободные (.free)
             //def (ключевое слово) - объект (вводит переменную или метод)
+            
+            // поправка: def - это _вместо_ объявления типа локальной переменной
+            // def i = 2 // тип i автоматически определится как Integer когда кто-то будет использолвана переменная i
+            // def s = "abc" // тип i автоматически определится как String когда кто-то будет использолвана переменная s и тп
+            // вместо def можно явно писать тип напр Integer или String или Tensor  и тп
+
+            
             //Для того, чтобы обратиться к члену класса, необходимо указать его имя после имени объекта через точку.
             //indices, upper, lower, free - члены класса Redberry
             def upper = expression.indices.free.upper.si
@@ -56,15 +68,22 @@ class SymmetrizeOp {
             //В классе SymmetrizeOp вызываем метод, который описан в TensorUtils -
             // статический метод getAllIndicesNamesT с параметром expression.
             //Создаём переменную forbiddenIndices (запрещённые индексы), присваиваем ей этот метод.
+            
+            // попрвака: присваеваем не метод, а результат вызова метода; мы  _вызывыаем_ метод getAllIndicesNamesT 
+            // с аргументом expression и результат выполнения кладем в переменную forbiddenIndices
 
             // ЧТО ДЕЛАЕТ МЕТОД getAllIndicesNamesT ?
+            // метод getAllIndicesNamesT возвращает множество вообще всех индексов которые где-либо встречаются в выражении
 
             def forbiddenIndices = TensorUtils.getAllIndicesNamesT(expression)
 
             // ЧТО ДЕЛАЮТ МЕТОДЫ addAll И toArray ?
+            // addAll добавляет все элменты массива в множество
+            // toArray превращает объект Indices просто в массив одиночных индексов
 
             //Переменная forbiddenIndices обращается к методу addAll, в параметрах которой
             // переменная dIndices обращается к методу toArray
+            // здесь все индексы dIndices мы тоже добавляем в множество запрещенных индексов хранящееся в перпеменной forbiddenIndices
             forbiddenIndices.addAll(dIndices.toArray())
             //Оператор new создает экземпляр (переменную ig) указанного класса (в данном случае
             // класса IndexGeneratorImpl) и возвращает ссылку на вновь созданный объект.
@@ -75,6 +94,8 @@ class SymmetrizeOp {
             // generate, в параметрах которого переменная dIndices обращается к ... ???
 
             // ЧТО ДЕЛАЮТ МЕТОДЫ create И generate ? что есть get(0).type ?
+            // dIndices.get(0) -- первый индекс 
+            // dIndices.get(0).type -- тип первого индекса (греческий, латинский тп, закодировано в одном байте)
 
             def iType = dIndices.get(0).type
 
@@ -144,15 +165,18 @@ class SymmetrizeOp {
             //Создаём переменную toSymmetrize, которой присваиваем переменную nabla с инвертированными индексами.
 
             // ЧТО ТАКОЕ [iPosition, iPosition + 1] ?
+            // nabla.indices[iPosition, iPosition + 1] --- возвращает индексы начиная с iPosition и до iPosition + 1 (включительно)
 
             def toSymmetrize = nabla.indices[iPosition, iPosition + 1].inverted
             //Свойство .symmetries позволяет определить перестановочные симметрии индексов. Оно
             // возвращает контейнер перестановок и соответствующую группу PermutationGroup.
             //Метод setSymmetric() устанавливает симметрии.
+            // поправка: setSymmetric() делает индексы полностью симметричными
             toSymmetrize.symmetries.setSymmetric()
             //Создаём переменную higher, которой присваиваем произведение, в котором... ???
 
             // ЧТО ПРОИСХОДИТ С gTensor ?
+            // (Symmetrize[toSymmetrize] >> gTensor) -- это применить симметризацию к тензору gTensor и вернуть резалт
 
             //Symmetrize[indices] — делает симметрии выражения одинаковыми с симметриями индексов,
             // делает выражение симметричным только по заданным индексам, также умножит результат
@@ -189,6 +213,10 @@ class SymmetrizeOp {
             //Создаём переменную subs, присваиваем ей... ???
 
             // ЧТО ДЕЛАЕТ МЕТОД eq ?
+            // a.eq(b) создает замену а -> b ; например 
+            // def a = "x".t; def b = "y"; def subs = a.eq(b); все равно что написать сразу: def subs = "x = y".t;
+            
+            
 
             // lNabla * rNabla -> nNabla
             def subs = (lNabla * rNabla).eq(nNabla)

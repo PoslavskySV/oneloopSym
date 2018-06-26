@@ -5,6 +5,7 @@ import cc.redberry.core.utils.TensorUtils
 import cc.redberry.groovy.Redberry
 import org.junit.Test
 
+import static cc.redberry.core.context.OutputFormat.*
 import static cc.redberry.core.tensor.Tensors.addSymmetries
 import static cc.redberry.core.tensor.Tensors.setSymmetric
 import static cc.redberry.groovy.RedberryStatic.*
@@ -49,11 +50,16 @@ class SymmetrizeOpTest {
         }
     }
 
-    @Test
-    // ЭТО ЧТО ???
+
+    @Test // ЭТО ЧТО ???
+    // это аннотация (https://en.wikipedia.org/wiki/Java_annotation) --- штука аля декораторов в python или аттрибутов в C#
+    // в данном случае это аннотация из пакета JUnit (junit.org) -- говорит о том, что данный метод 
+    // является тестом; с помощью JUnit можно тестовые методы запускать не создавая Main-класса (JUnit 
+    // автоматически создаст нужный main-класс и тп); короче здесь эта тема для тестирования и чтобы не 
+    // писать каждый раз новый main-класс чтобы что-то попырить поиграться
     void test1() { //Ключевое слово void указывает на то, что метод ничего не возвращает. Условно методы,
         // которые не возвращают никакого значения, называются процедурами.
-        use(Redberry) {//указываем, что будем использовать редберри
+        use(Redberry) {//указываем, что будем использовать редберри <--- //указываем, что будем использовать синтаксис определенный в классе Redberry
             CC.resetTensorNames(1) //фиксирует порядок слагаемых в выводимом результате
             //Устанавливаем симметрии тензора Римана. Метод addSymmetry имеет два аргумента: простой тензор
             // (или его строковое представление) и перестановку. Redberry имеет внутреннее представление
@@ -63,6 +69,7 @@ class SymmetrizeOpTest {
             // симметрию в антисимметрию и наоборот.
 
             // ПОЧЕМУ У НАС addSymmetries, А НЕ addSymmetry ? ПОТОМУ ЧТО ДОБАВЛЯЕМ ДВЕ СИММЕТРИИ?
+            // Да, тк добавляем две симметии (можно так сколько угодно добавлять через запятую)
 
             addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
 
@@ -72,9 +79,9 @@ class SymmetrizeOpTest {
 
             // Определяем переменные (были в методе symmetrizePair класса SymmetrizeOp)
             //.t превращает обычные символы в компьютерный объект
-            def gTensor = 'G^ab_ij'.t
-            def nabla = 'N_ab'.t
-            def hTensor = 'H^ij'.t
+            //def gTensor = 'G^ab_ij'.t
+            //def nabla = 'N_ab'.t
+            //def hTensor = 'H^ij'.t
 
 //    symmetrizePair(gTensor, nabla, hTensor, 0)
 //    symmetrizePair(gTensor, nabla, hTensor, 1)
@@ -93,10 +100,14 @@ class SymmetrizeOpTest {
 //    println(Collect['N_ab'] >> op)
             // << (Бинарный оператор сдвига влево. Значение левых операндов перемещается влево на количество бит,
             // заданных правым операндом.)
+            // в данном случае оператор "<<" переопределен (см. перегрузка операторов на википедии)
 
             // ЧТО ПРОИСХОДИТ ?
 
-            //Создаём переменную symmetrized и ... ??
+            //Создаём переменную symmetrized и ... ?? 
+            // и присваеваем ей значение, которое возвращает метод symmetrizePair (он в другом фале определен,
+            // мы его импортировали через "import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizePair")
+            // symmetrizePair берет 3 аргумента и возвращает в этом направлении некий тинзор
             def symmetrized = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0)
             symmetrized <<= k
 
@@ -104,14 +115,14 @@ class SymmetrizeOpTest {
             //ExpandAndEliminate разлагает произведение сумм и положительных целых степеней и,
             // по ходу дела, устраняет метрические тензоры и дельты Кронекера.
             symmetrized <<= ExpandAndEliminate
-            // Тензор Риччи
+            // подставляем сокращение для Тензора Риччи
             symmetrized <<= 'R^a_bac = R_bc'.t
-            // Скалярная кривизна
+            // подставляем сокращение для скалярной кривизны
             symmetrized <<= 'R^a_a = R'.t
 
             //Collect[var1, var2] собирает вместе члены, имеющие те же степени, что и указанные выражения.
             // В случае тензорных выражений Collect введёт дельты Кронекера или метрические тензоры, чтобы
-            // «???» индексы и разложить тензорные части.
+            // «???» индексы и разложить тензорные части. (см примеры http://redberry.cc/documentation:ref:collect#collect)
             //В случае скалярных выражений поведение Collect аналогично другим CAS.
             //EliminateDueSymmetries удаляет части выражения, которые равны нулю из-за симметрии.
             symmetrized <<= Collect['N_ab'.t, 'H^ij'.t] & EliminateDueSymmetries
@@ -119,9 +130,14 @@ class SymmetrizeOpTest {
             // об объекте symmetrized.
             println(TensorUtils.info(symmetrized))
             //Произведение матрицы W и поля H: W^{a}_{p,q,c}*H^{c}_{a} !НЕ СОВПАДАЕТ!
-            println(symmetrized[0])
+            println symmetrized[0].toString(LaTeX)
             // Что он выводит тут ?
-            println(symmetrized[1])
+            // symmetrized имеет тип Tensor. В Redberry все мат. выражения имеют тип Tensor. 
+            // symmetrized[0] -- первый элемент мат. выражения (для суммы первое слагаемое, для произведения первый множитель)
+            // symmetrized[1] -- второй элемент мат. выражения (для суммы второе слагаемое, для произведения второй множитель)
+            // symmetrized[2] -- третий и тп
+            
+            println symmetrized[1].toString(LaTeX)
         }
     }
 }
