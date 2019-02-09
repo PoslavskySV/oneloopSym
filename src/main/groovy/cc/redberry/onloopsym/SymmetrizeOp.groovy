@@ -38,7 +38,15 @@ class SymmetrizeOp {
 // тип возвращается, когда будет вызван метод. Вместо "def" мы могли бы написать реальный тип который мы вернем, 
 // в данном случае это тип Tensor. См. "статическая типизация" и "динамическая типизация" на википедии
     static def covariantCommutator(SimpleIndices dIndices, Tensor expression) {
-
+        // Assert — это специальная конструкция, позволяющая проверять предположения о значениях произвольных данных в
+        // произвольном месте программы. Эта конструкция может автоматически сигнализировать при обнаружении некорректных
+        // данных, что обычно приводит к аварийному завершению программы с указанием места обнаружения некорректных данных.
+        // Assert'ы визуально выделяются из общего кода и несут важную информацию о предположениях, на основе которых
+        // работает данный код. Правильно расставленные assert'ы способны заменить большинство комментариев в коде.
+        // Т.к. assert'ы могут быть удалены на этапе компиляции либо во время исполнения программы, они не должны менять
+        // поведение программы. Если в результате удаления assert'а поведение программы может измениться, то это явный
+        // признак неправильного использования assert'а. Таким образом, внутри assert'а нельзя вызывать функции,
+        // изменяющие состояние программы либо внешнего окружения программы.
         assert dIndices.size() == 2
 
         //covariantCommutator - Идентификатор-метода (определяет имя метода)
@@ -151,6 +159,9 @@ class SymmetrizeOp {
     }
 
     //Этот метод симметризует выражение по паре индексов.
+    //Tensor gTensor -- это любая из матриц K, W, M и т.д.
+    //SimpleTensor nabla -- произведение ковариантных производных
+    //Tensor hTensor -- поле h, на которое действует дифф. оператор
     static def symmetrizePair(Tensor gTensor, SimpleTensor nabla, Tensor hTensor, int iPosition) {
         //Tensor gTensor, SimpleTensor nabla, Tensor hTensor, int iPosition - параметры метода symmetrizePair.
         //SimpleTensor, Tensor и int - типы переменных, gTensor, nabla, hTensor и iPosition - названия переменных.
@@ -168,6 +179,7 @@ class SymmetrizeOp {
             // nabla.indices[iPosition, iPosition + 1] --- возвращает индексы начиная с iPosition и до iPosition + 1 (включительно)
 
             def toSymmetrize = nabla.indices[iPosition, iPosition + 1].inverted
+            println('toSymmetrize: ' + (toSymmetrize))
             //Свойство .symmetries позволяет определить перестановочные симметрии индексов. Оно
             // возвращает контейнер перестановок и соответствующую группу PermutationGroup.
             //Метод setSymmetric() устанавливает симметрии.
@@ -182,7 +194,7 @@ class SymmetrizeOp {
             // делает выражение симметричным только по заданным индексам, также умножит результат
             // на симметрийный коэффициент.
             def higher = (Symmetrize[toSymmetrize] >> gTensor) * nabla * hTensor
-
+            println('higher: ' + (higher << ExpandAndEliminate))
             //Создаём переменную lNabla, а дальше идёт условный (тернарный) оператор.
             //== (Проверяет, равны или нет значения двух операндов, если да, то условие становится истинным)
             //Тернарный оп-р (?:), переменная lNabla = (выражение) ? значение if true : значение if false
@@ -194,6 +206,7 @@ class SymmetrizeOp {
             // simpleTensor(nabla.stringName, nabla.indices[0..(iPosition - 1)]) — третий операнд
             // nabla.indices[0..(iPosition - 1)] — возвращает список элементов от 0-го по (iPosition - 1) ??
             def lNabla = iPosition == 0 ? 1.t : simpleTensor(nabla.stringName, nabla.indices[0..(iPosition - 1)])
+            println('lNabla: ' + (lNabla))
             //Создаём переменную rNabla, дальше условный оператор.
             // iPosition == nabla.indices.size() - 2 — первый операнд, справа SimpleTensor nabla
             // получает индексы (.indices), .size() — возвращает размер тензора.
@@ -206,11 +219,13 @@ class SymmetrizeOp {
             // ЧТО ТАКОЕ stringName ?
 
             def rNabla = iPosition == nabla.indices.size() - 2 ? 1.t : simpleTensor(nabla.stringName, nabla.indices[(iPosition + 2)..(nabla.indices.size() - 1)])
+            println('rNabla: ' + (rNabla))
             //Создаём переменную nNabla, дальше условный оператор.
             // ((lNabla.indices + rNabla.indices).size() == 0) — первый операнд, 1.t — второй операнд.
             // simpleTensor(nabla.stringName, lNabla.indices + rNabla.indices) — 3-тий операнд.
-            def nNabla = nabla.indices.size() == 2 ? 1.t : simpleTensor(nabla.stringName, lNabla.indices + rNabla.indices)
-            //Создаём переменную subs, присваиваем ей... ???
+            def nNabla = nabla.indices.size() == 2 ? 1.t : simpleTensor(nabla.stringName, lNabla.indices.si + rNabla.indices.si)
+            println('nNabla: ' + (nNabla))
+            //Создаём переменную subs, произведение правой и левой набл, которые потом сравниваются с nNabla
 
             // ЧТО ДЕЛАЕТ МЕТОД eq ?
             // a.eq(b) создает замену а -> b ; например 
@@ -220,7 +235,7 @@ class SymmetrizeOp {
 
             // lNabla * rNabla -> nNabla
             def subs = (lNabla * rNabla).eq(nNabla)
-            //Создаём переменную lower... ???
+
             def lower = gTensor * lNabla * covariantCommutator(nabla.indices[iPosition, iPosition + 1], rNabla * hTensor) / 2.t
             // <<= (Оператор присваивания «Сдвиг влево», C << = 2, это как C = C << 2).
             // & (Бинарный оператор AND копирует бит в результат, если он существует в обоих операндах).
@@ -236,7 +251,26 @@ class SymmetrizeOp {
             //lower = (ExpandAndEliminate & subs) >> lower
             lower <<= ExpandAndEliminate & subs
 
+            println('lower: ' + (lower))
+
             return higher + lower
         }
     }
+
+    //цикл для симметризации по всем индексам
+    static def symmetrizeAll(SimpleTensor xxx, SimpleTensor xxx, int xxx) {
+
+        use(Redberry) {
+
+
+    result = expr
+
+    for (int i = 0; i < indices.length; ++i)
+    result = symmetryzePair(result, i)
+
+    symmetryzePair(Tensor, index)
+
+        }
+    }
+
 }

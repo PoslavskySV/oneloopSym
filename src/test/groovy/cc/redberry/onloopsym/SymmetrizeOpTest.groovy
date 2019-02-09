@@ -14,7 +14,10 @@ import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizePair
 //Проверяем вычисления для работы "Quantum properties of affine-metric gravity with the cosmological term".
 //Создаём класс SymmetrizeOpTest
 class SymmetrizeOpTest {
-
+//Тест выражения для матрицы W оператора D2, уже проведена свёртка с ков. производными и полем h.
+    //P_qp означает часть выражения, взятую непосредственно из вывода программы в test1, и соответствующую вкладу W
+    //H_ab означает ту же часть, но полученную на бумаге
+    //test_op2_correctness сравнивает эти две части
     @Test
     void test_op2_correctness() {
         use(Redberry) {
@@ -29,7 +32,9 @@ class SymmetrizeOpTest {
             println((proga & byhand & ExpandAndEliminate) >> 'P_qp - H_qp'.t)
         }
     }
-
+//Тест выражения для оператора D2, где уже проведена свёртка с ков. производными и полем h.
+    //actual означает вывод программы в test1, целиком
+    //expected означает то же выражение, но полученное на бумаге
     @Test
     void test1_operator2() {
         use(Redberry) {
@@ -44,13 +49,14 @@ class SymmetrizeOpTest {
             def actual = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0)
             actual <<= kTensors & ExpandAndEliminate & 'd_a^a = 4'.t
 
-            def expected = 'N_ab * ... '.t
+            //не правильно записан expected? ВЫДАЁТ ОШИБКУ!
+            def expected = 'N_ab*(d_{mnpq}*g^{ab}+(1/2)*(g_{mp}*d_{nq}^{ab}+g_{np}*d_{mq}^{ab}+g_{mq}*d_{np}^{ab}+g_{nq}*d_{mp}^{ab}))*h^{pq}+(1/2)*(R_{nqmp}*h^{pq}+R_{mqnp}*h^{pq}-R_{nb}*h^{b}_{m}-R_{mb}*h^{b}_{n})'.t
 
             assert TensorUtils.equals(expected, actual)
         }
     }
 
-
+//Вычисляем выражение для матрицы W оператора D2
     @Test // ЭТО ЧТО ???
     // это аннотация (https://en.wikipedia.org/wiki/Java_annotation) --- штука аля декораторов в python или аттрибутов в C#
     // в данном случае это аннотация из пакета JUnit (junit.org) -- говорит о том, что данный метод 
@@ -95,7 +101,7 @@ class SymmetrizeOpTest {
             'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
             // Вводим оператор, соответствующий D2. Почему "op" - серое? Куда оно ссылается?
 //            def op = 'd_ab^gd * N_a^a + (1/2)*(d_a^g * N_b^d + d_b^g * N_a^d + d_a^d * N_b^g + d_b^d * N_a^g)'.t
-            // Вводим матрицу К, соответствующую оператору D2.
+            // Вводим матрицу К, соответствующую оператору D2, т.е. ещё не симметризованную.
             def k = 'K_c^e_{ab}^{gd} = ((1/2)*d_{a}^{e}*d_{b}^{g}*d^{d}_{c}+(1/2)*d^{g}_{c}*d_{a}^{d}*d_{b}^{e}+(1/2)*d_{a}^{g}*d^{d}_{c}*d_{b}^{e}+(1/2)*d_{a}^{e}*d^{g}_{c}*d_{b}^{d}+d^{e}_{c}*d_{ab}^{gd})'.t
 //    println(Collect['N_ab'] >> op)
             // << (Бинарный оператор сдвига влево. Значение левых операндов перемещается влево на количество бит,
@@ -107,7 +113,8 @@ class SymmetrizeOpTest {
             //Создаём переменную symmetrized и ... ?? 
             // и присваеваем ей значение, которое возвращает метод symmetrizePair (он в другом фале определен,
             // мы его импортировали через "import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizePair")
-            // symmetrizePair берет 3 аргумента и возвращает в этом направлении некий тинзор
+            // symmetrizePair берет 3 аргумента и возвращает в этом направлении некий тензор
+            //здесь a,b - индексы, сворачиваемые с двумя ковариантными производными, именно по ним проводится симметризация
             def symmetrized = symmetrizePair('K^ab_{ijpq}'.t, 'N_ab'.t, 'H^ij'.t, 0)
             symmetrized <<= k
 
@@ -129,7 +136,7 @@ class SymmetrizeOpTest {
             //Статический метод info из класса TensorUtils с параметром symmetrized возвращает информацию
             // об объекте symmetrized.
             println(TensorUtils.info(symmetrized))
-            //Произведение матрицы W и поля H: W^{a}_{p,q,c}*H^{c}_{a} !НЕ СОВПАДАЕТ!
+            //Произведение матрицы W и поля H: W^{a}_{p,q,c}*H^{c}_{a}
             println symmetrized[0].toString(LaTeX)
             // Что он выводит тут ?
             // symmetrized имеет тип Tensor. В Redberry все мат. выражения имеют тип Tensor. 
@@ -140,4 +147,67 @@ class SymmetrizeOpTest {
             println symmetrized[1].toString(LaTeX)
         }
     }
-}
+
+    @Test
+    //симметризация по паре индексов оператора с 4-мя индексами (1-е слагаемое оп. D1)
+    //нужно попытаться создать цикл, кот. будет брать рез-т симм-ции по паре инд. и снова симм-ть, смещаясь на 1 инд. влево или вправо
+    void test2() {
+        use(Redberry) {
+            CC.resetTensorNames(1)
+
+            addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+            setSymmetric 'R_ab'
+            setSymmetric 'H_ab'
+
+            'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
+            //Здесь записна часть матрицы К, соответствующая 1-му слагаемому оп. D1 (вместе c J с 4-мя индексами)
+            def k = 'K_cm^en_{ab}^{gd} = (1/2)*(d_{ab}*d^{gd}+d_{a}^{g}*d_{b}^{d}-d_{a}^{d}*d_{b}^{g})*d_{cm}*d^{en}'.t
+
+            //симм-ция проводится по индексам ab
+            def symmetrized = symmetrizePair('K^abcd_{ijpq}'.t, 'N_abcd'.t, 'H^ij'.t, 0)
+            symmetrized <<= k
+            symmetrized <<= ExpandAndEliminate
+            symmetrized <<= 'R^a_bac = R_bc'.t
+            symmetrized <<= 'R^a_a = R'.t
+            symmetrized <<= Collect['N_abcd'.t, 'H^ij'.t] & EliminateDueSymmetries
+
+            println(TensorUtils.info(symmetrized))
+            println(symmetrized)
+            for(def term: symmetrized)
+                println(term)
+            //println symmetrized[0].toString(LaTeX)
+            //println symmetrized[1].toString(LaTeX)
+            //println symmetrized[2].toString(LaTeX)
+            //println symmetrized[3].toString(LaTeX)
+            //println symmetrized[4].toString(LaTeX)
+
+        }
+    }
+
+    //этот тест для возможной реализации алгоритма, когда симметризация по паре индексов, выписываем вручную результат и снова прогоняем по паре индексов
+   // @Test
+    //void test3() {
+        //use(Redberry) {
+           // CC.resetTensorNames(1)
+
+           // addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+           // setSymmetric 'R_ab'
+           // setSymmetric 'H_ab'
+
+           // 'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
+            //Здесь записна часть матрицы К, соответствующая 1-му слагаемому оп. D1 (результат симметризации из test2)???
+           // def k = 'K_cm^en_{ab}^{gd} = (1/2)*d^{d}_{a}*d^{g}_{b}*d^{en}*d_{cm}'.t
+
+           // def symmetrized = symmetrizePair('K^abcd_{ijpq}'.t, 'N_bc'.t, 'H^ij'.t, 0)
+           // symmetrized <<= k
+           // symmetrized <<= ExpandAndEliminate
+           // symmetrized <<= 'R^a_bac = R_bc'.t
+          //  symmetrized <<= 'R^a_a = R'.t
+          //  symmetrized <<= Collect['N_bc'.t, 'H^ij'.t] & EliminateDueSymmetries
+
+           // println(TensorUtils.info(symmetrized))
+           // println symmetrized[0].toString(LaTeX)
+           // println symmetrized[1].toString(LaTeX)
+        }
+    //}
+//}
