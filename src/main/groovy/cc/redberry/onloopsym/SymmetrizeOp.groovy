@@ -8,10 +8,11 @@ import cc.redberry.core.indices.IndicesFactory
 import cc.redberry.core.indices.SimpleIndices
 import cc.redberry.core.tensor.SimpleTensor
 import cc.redberry.core.tensor.Tensor
+import cc.redberry.core.groups.permutations.PermutationGroup
 import cc.redberry.core.utils.TensorUtils
 import cc.redberry.groovy.Redberry
 
-import static cc.redberry.core.context.OutputFormat.*
+//import static cc.redberry.core.context.OutputFormat.*
 import static cc.redberry.core.tensor.Tensors.simpleTensor
 import static cc.redberry.groovy.RedberryStatic.ExpandAndEliminate
 import static cc.redberry.groovy.RedberryStatic.Symmetrize
@@ -253,22 +254,32 @@ class SymmetrizeOp {
 
             println('lower: ' + (lower))
 
-            return higher + lower
+            def result = symmetrizeAll(higher + lower, 0)
+
+            return result
         }
     }
 
     //цикл для симметризации по всем индексам
-    static def symmetrizeAll(SimpleTensor xxx, SimpleTensor xxx, int xxx) {
+    static def symmetrizeAll(Tensor expr, int indices) {
 
         use(Redberry) {
 
+    def result = expr
 
-    result = expr
+//Cannot resolve symbol 'length' - переменная length не определена. Но при попытках определить её, как параметр метода или уже в теле метода,
+// ничего не получается, переменная length остаётся неопределённой. Может быть нужен какой-то новый импорт?
+// Не понятно должен ли метод symmetrizeAll вообще иметь параметры. Логично было бы что да, т.к. по замыслу result в symmetryzePair
+// представляет собой higher + lower к которым применён метод symmetrizeAll. Должен ли метод symmetryzePair вызывать метод symmetrizeAll
+// или наоборот (тогда в SymmetrizeOpTest тоже следует вызывать уже не symmetryzePair, а symmetrizeAll).
+// Не совсем понятно какое значение новый метод должен возвращать основной программе, result пока написан временно.
 
     for (int i = 0; i < indices.length; ++i)
-    result = symmetryzePair(result, i)
 
-    symmetryzePair(Tensor, index)
+    //result = symmetryzePair(result, i)
+    //symmetryzePair(Tensor, index)
+
+           return result
 
         }
     }
