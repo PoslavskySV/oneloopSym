@@ -10,6 +10,7 @@ import static cc.redberry.core.tensor.Tensors.addSymmetries
 import static cc.redberry.core.tensor.Tensors.setSymmetric
 import static cc.redberry.groovy.RedberryStatic.*
 import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizePair
+import static cc.redberry.onloopsym.SymmetrizeOp.symmetrizeAll
 
 //Проверяем вычисления для работы "Quantum properties of affine-metric gravity with the cosmological term".
 //Создаём класс SymmetrizeOpTest
@@ -150,7 +151,6 @@ class SymmetrizeOpTest {
 
     @Test
     //симметризация по паре индексов оператора с 4-мя индексами (1-е слагаемое оп. D1)
-    //нужно попытаться создать цикл, кот. будет брать рез-т симм-ции по паре инд. и снова симм-ть, смещаясь на 1 инд. влево или вправо
     void test2() {
         use(Redberry) {
             CC.resetTensorNames(1)
@@ -179,35 +179,35 @@ class SymmetrizeOpTest {
             //println symmetrized[1].toString(LaTeX)
             //println symmetrized[2].toString(LaTeX)
             //println symmetrized[3].toString(LaTeX)
-            //println symmetrized[4].toString(LaTeX)
 
         }
     }
 
-    //этот тест для возможной реализации алгоритма, когда симметризация по паре индексов, выписываем вручную результат и снова прогоняем по паре индексов
-   // @Test
-    //void test3() {
-        //use(Redberry) {
-           // CC.resetTensorNames(1)
+    //проверка цикла, кот. будет брать рез-т симм-ции по паре инд. и снова симм-ть, смещаясь на 1 инд. влево или вправо
+    @Test
+    void test3() {
+        use(Redberry) {
+            CC.resetTensorNames(1)
 
-           // addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
-           // setSymmetric 'R_ab'
-           // setSymmetric 'H_ab'
+            addSymmetries 'R_abcd', -[[0, 1]].p, [[0, 2], [1, 3]].p
+            setSymmetric 'R_ab'
+            setSymmetric 'H_ab'
 
-           // 'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
-            //Здесь записна часть матрицы К, соответствующая 1-му слагаемому оп. D1 (результат симметризации из test2)???
-           // def k = 'K_cm^en_{ab}^{gd} = (1/2)*d^{d}_{a}*d^{g}_{b}*d^{en}*d_{cm}'.t
+            'd_abcd := (1/2)*(d_ab*d_cd + d_ac*d_bd)'.t
+            //Здесь записна часть матрицы К, соответствующая 1-му слагаемому оп. D1
+            def k = 'K_cm^en_{ab}^{gd} = (1/2)*(d_{ab}*d^{gd}+d_{a}^{g}*d_{b}^{d}-d_{a}^{d}*d_{b}^{g})*d_{cm}*d^{en}'.t
 
-           // def symmetrized = symmetrizePair('K^abcd_{ijpq}'.t, 'N_bc'.t, 'H^ij'.t, 0)
-           // symmetrized <<= k
-           // symmetrized <<= ExpandAndEliminate
-           // symmetrized <<= 'R^a_bac = R_bc'.t
-          //  symmetrized <<= 'R^a_a = R'.t
-          //  symmetrized <<= Collect['N_bc'.t, 'H^ij'.t] & EliminateDueSymmetries
+            def symm = symmetrizeAll('K^abcd_{ijpq}'.t, '^abcd'.si)
+            symm <<= k
+            symm <<= ExpandAndEliminate
+            symm <<= 'R^a_bac = R_bc'.t
+            symm <<= 'R^a_a = R'.t
+            symm <<= Collect['N_bc'.t, 'H^ij'.t] & EliminateDueSymmetries
 
-           // println(TensorUtils.info(symmetrized))
-           // println symmetrized[0].toString(LaTeX)
-           // println symmetrized[1].toString(LaTeX)
+            println(TensorUtils.info(symm))
+            println(symm)
+            for(def term: symm)
+                    println(term)
         }
-    //}
-//}
+    }
+}
