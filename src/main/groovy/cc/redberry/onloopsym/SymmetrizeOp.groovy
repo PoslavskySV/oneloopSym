@@ -254,30 +254,21 @@ class SymmetrizeOp {
 
             println('lower: ' + (lower))
 
-            def result = symmetrizeAll(higher + lower, 0)
-
-            return result
+            return higher + lower
         }
     }
 
-    //цикл для симметризации по всем индексам
-    static def symmetrizeAll(Tensor expr, int indices) {
+    //метод с циклом для симметризации по всем индексам
+    static def symmetrizeAll(Tensor expr, indices) {
 
         use(Redberry) {
 
     def result = expr
 
-//Cannot resolve symbol 'length' - переменная length не определена. Но при попытках определить её, как параметр метода или уже в теле метода,
-// ничего не получается, переменная length остаётся неопределённой. Может быть нужен какой-то новый импорт?
-// Не понятно должен ли метод symmetrizeAll вообще иметь параметры. Логично было бы что да, т.к. по замыслу result в symmetryzePair
-// представляет собой higher + lower к которым применён метод symmetrizeAll. Должен ли метод symmetryzePair вызывать метод symmetrizeAll
-// или наоборот (тогда в SymmetrizeOpTest тоже следует вызывать уже не symmetryzePair, а symmetrizeAll).
-// Не совсем понятно какое значение новый метод должен возвращать основной программе, result пока написан временно.
-
     for (int i = 0; i < indices.length; ++i)
 
-    //result = symmetryzePair(result, i)
-    //symmetryzePair(Tensor, index)
+    result = symmetrizePair('K^abcd_{ijpq}'.t, 'N_abcd'.t, 'H^ij'.t, 0)
+    //symmetrizePair(Tensor, index)
 
            return result
 
