@@ -255,20 +255,23 @@ class SymmetrizeOp {
             println('lower: ' + (lower))
 
             return higher + lower
+
         }
     }
 
     //метод с циклом для симметризации по всем индексам
-    static def symmetrizeAll(Tensor expr, indices) {
+    static def symmetrizeAll(Tensor expr, SimpleIndices indices) {
 
         use(Redberry) {
 
     def result = expr
 
-    for (int i = 0; i < indices.length; ++i)
+    for (int i = 0; i < indices.size(); ++i) {
 
-    result = symmetrizePair('K^abcd_{ijpq}'.t, 'N_abcd'.t, 'H^ij'.t, 0)
-    //symmetrizePair(Tensor, index)
+        result = symmetrizePair('K^abcd_{ijpq}'.t, 'N_abcd'.t, 'H^ij'.t, 0)
+    }
+    //symmetrizePair(Tensor, '^abcd'.si)
+            println('result:' + result)
 
            return result
 
